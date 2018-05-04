@@ -2,12 +2,14 @@
 #include <iostream>
 #include <map>#include <list>
 #include <string>
+#include "sigslot.h"
 #include "tc_shared_ptr.h"
 #include "tc_enable_shared_from_this.h"
 
 
 using namespace tars;
 using namespace std;
+using namespace sigslot;
 
 #define CONSTRUCTOR_DESTROY_AUTO(classname)  \
  classname(){}                               \
@@ -33,7 +35,7 @@ class object:public TC_EnableSharedFromThis<object>{
      
      CONSTRUCTOR_DESTROY_AUTO(object)
 	 object(string key1,string value1):key(key1),value(value1){}
-	 TC_SharedPtr<object>getSharedptr(){
+	 TC_SharedPtr<object> getSharedptr(){
 	  return sharedFromThis();
 	 }
 	 string toString(){
@@ -45,11 +47,89 @@ class object:public TC_EnableSharedFromThis<object>{
 };
 
 
+
+
+
+
+
+class Light:public TC_EnableSharedFromThis<Light>,public has_slots<>{
+
+public:
+
+      virtual void turnon(bool bs){
+	          if(bs){
+			    std::cout<<"open light signal"<<std::endl;
+			  }
+	  
+	  }
+	  virtual void turnoff(bool bs){
+	          if(bs){
+			    std::cout<<"close light signal"<<std::endl;
+			  }
+	  
+	  }
+	  
+	  void print(){
+	     
+		 std::cout<<"toString "<<std::endl;
+	  
+	  }
+	  
+
+};
+
 typedef  TC_SharedPtr<object>   smart_ptr_obj;
+
+class Light;
+
+class button {
+
+public:
+
+ signal0<>print;
+ signal1<bool> turnon;
+ signal1<bool> turnoff;
+ 
+ void setstatus(bool bs){
+   bstatus=bs;
+ }
+ bool getstatus(){
+  return bstatus;
+ }
+ 
+ void bind(){
+ 
+ this->print.connect(&m_light,&Light::print);
+ this->turnon.connect(&m_light,&Light::turnon);
+ this->turnoff.connect(&m_light,&Light::turnoff); 
+ 
+ }
+ 
+ button(){}
+ ~button(){ this->print.disconnect(&m_light);
+            this->turnon.disconnect(&m_light);
+			this->turnoff.disconnect(&m_light);
+ }
+ bool bstatus;
+ Light m_light;
+ 
+
+};
+
+
+
+
+
 
 
 int main(){
-
+    
+	
+	
+	  button btn;
+	  btn.bind();
+	  btn.turnon(true);
+	  
      list <string>testlist;
 	 testlist.push_back("12");
 	 testlist.push_back("13");

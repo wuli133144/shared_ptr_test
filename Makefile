@@ -7,13 +7,13 @@ SRC := $(wildcard *.cpp)
 
 CC := g++ -std=c++11
 
-INCLDUE :=  -I ./include/  ./
-LIB     := -L./lib/  -L ./
+INCLUDE :=  -I ./include/   -I./include/util/  -I ./include/sigslot
+LIB     := -L./lib/  -L ./   -ltarsutil
 
 object := test
 
 $(object):
-	$(CC) -o $@ $(SRC)
+	$(CC) -o $@  $(INCLUDE) $(SRC) $(LIB)
 
 
 clean:
