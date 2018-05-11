@@ -1,242 +1,286 @@
-
 #include <iostream>
-#include <map>#include <list>
+#include <map>
+#include <list>
+#include <stack>
+
 #include <string>
+#include <stdio.h>
+#include <sstream>
+#include <vector>
+#include <cctype>
+#include <memory>
 #include "sigslot.h"
 #include "tc_shared_ptr.h"
 #include "tc_enable_shared_from_this.h"
 
 
-using namespace tars;
-using namespace std;
-using namespace sigslot;
+//using namespace std;
+//using namespace tars;
 
-#define CONSTRUCTOR_DESTROY_AUTO(classname)  \
- classname(){}                               \
- ~classname(){}                     
+#include <iostream>
+#include <utility>
 
 
-class key_map_t {
-   public:
-     key_map_t(string key1,string value1):key(key1),value(value1){}
-	 string key;
-	 string value;
-	  
-   public:
-   CONSTRUCTOR_DESTROY_AUTO(key_map_t)
 
 
-};
+template<typename T,typename U>
+class Bnode{
+public:
+	   Bnode(){}
+	   Bnode(std::pair<T,U>&p):lchild(nullptr),rchild(nullptr),parent(nullptr)
+	   {
+	         key_value.first=p.first;
+			 key_value.second=p.second;
+	   }
+	   std::pair<T,U>key_value;
+       Bnode<T,U>*lchild,*rchild,*parent;
+	   T &getKey()    {return key_value.first;}
+	   U &getValue(){return key_value.second;}
 
-
-class object:public TC_EnableSharedFromThis<object>{
-
-  public:
-     
-     CONSTRUCTOR_DESTROY_AUTO(object)
-	 object(string key1,string value1):key(key1),value(value1){}
-	 TC_SharedPtr<object> getSharedptr(){
-	  return sharedFromThis();
-	 }
-	 string toString(){
-	  return key+" : "+value;
-	 }
-     string key;
-	 string value;
-     
+	   friend class bin2tree;
+	   
 };
 
 
 
 
-
-
-
-class Light:public TC_EnableSharedFromThis<Light>,public has_slots<>{
+template<typename T,typename U>
+class binSTtree{
 
 public:
-
-      virtual void turnon(bool bs){
-	          if(bs){
-			    std::cout<<"open light signal"<<std::endl;
-			  }
-	  
-	  }
-	  virtual void turnoff(bool bs){
-	          if(bs){
-			    std::cout<<"close light signal"<<std::endl;
-			  }
-	  
-	  }
-	  
-	  void print(){
-	     
-		 std::cout<<"toString "<<std::endl;
-	  
-	  }
-	  
-
-};
-
-typedef  TC_SharedPtr<object>   smart_ptr_obj;
-
-class Light;
-
-class button {
-
-public:
-
- signal0<>print;
- signal1<bool> turnon;
- signal1<bool> turnoff;
- 
- void setstatus(bool bs){
-   bstatus=bs;
- }
- bool getstatus(){
-  return bstatus;
- }
- 
- void bind(){
- 
- this->print.connect(&m_light,&Light::print);
- this->turnon.connect(&m_light,&Light::turnon);
- this->turnoff.connect(&m_light,&Light::turnoff); 
- 
- }
- 
- button(){}
- ~button(){ this->print.disconnect(&m_light);
-            this->turnon.disconnect(&m_light);
-			this->turnoff.disconnect(&m_light);
- }
- bool bstatus;
- Light m_light;
- 
-
-};
-
-
-
-
-
-
-
-int main(){
-    
+	Bnode<T,U> *root;
+	size_t size;
 	
-	
-	  button btn;
-	  btn.bind();
-	  btn.turnon(true);
-	  
-     list <string>testlist;
-	 testlist.push_back("12");
-	 testlist.push_back("13");
-	 testlist.push_back("14");
-	 testlist.push_back("15");
-	 testlist.push_back("16");
-	 testlist.push_back("17");
-	 //! 这段代码就会奔溃，迭代器失效的常见情况
-	 #if 0
-	 for(auto it=testlist.begin();it!=testlist.end();it++)
-	 {
-	        if((*it)=="12")
-			{
-			  testlist.erase(it);
-			}
-			 
-			
-	 }
-	 #else 
-	 
-	 for(auto it=testlist.begin();it!=testlist.end();)
-	 {
-	        if((*it)=="12")
-			{
-			   testlist.erase(it++);
-			}else{
-			  it++;
-			}
-						
-	 }
-	  
-	 #endif 
-	 
-	 
-	 
-	 
-	 //! 测试map的应用、
-     
-	 map<string,string>info;
-	 info.insert(make_pair("12","xxxxxx"));
-	 info.insert(make_pair("11","xxxxxx"));
-	 info.insert(make_pair("15","xxxxxx"));
-	 info.insert(make_pair("13","xxxxxx"));
-    
-	 for(auto i=info.begin();i!=info.end();i++)				 
-	 {
-	       std::cout<<i->first<<std::endl;
-	 }
-	 
+	binSTtree():root(NULL),size(0){}
+	size_t getsize(){return size;}
+    bool insert(std::pair<T,U>&p){
 
-	 //11 12 13 15
-	 // right way
-	  for(auto i=info.begin();i!=info.end();)
-	 {
-	         //auto iter= info.find("15");
-			 if(i->first=="15")
-			 {  
-			    std::cout<<"mark position"<<std::endl;
-				
-			    info.erase(i++); 
-			 }else{
-			  
-			   std::cout<<i->first<<std::endl;
-			    i++;
-			 }
-			 
-			
+	 Bnode<T,U>* tem=NULL;
+	 Bnode<T,U> *pnode=new Bnode<T,U>(p);
+     std::cout<<"next line is search()"<<std::endl;
+	 if(((tem=search(p))!=NULL)){
+	 	std::cout<<"search top line"<<std::endl;
+	 	 if(tem->getKey()==p.first){//over doit
+		 	return false;
+		 }
+		 //tem=parent
+		 if(tem->getKey()>p.first)
+		 {
+		    tem->lchild=pnode;
+			pnode->parent=tem;
+		 }else{
+		 	tem->rchild=pnode;
+			pnode->parent=tem;
+		 }
+		 size+=1;
+		 return true;
 	 }
-	 
-	 
-	  // right way
-	  for(auto i=info.begin();i!=info.end();)
+	 if(root==NULL)
 	 {
-	         //auto iter= info.find("15");
-			 if(i->first=="15")
-			 {  
-			    std::cout<<"mark position"<<std::endl;
-			    i=info.erase(i); 
-			 }else{
-			  
-			   std::cout<<i->first<<std::endl;
-			    i++;
-			 }
-			 
-			
+	   root=pnode;
+	   pnode->parent=NULL;
+	   size+=1;
+	   return true;
 	 }
+     return false;
+
+   }
+   //search 
+   Bnode<T,U> * search(std::pair<T,U>&p){
+         if(root==NULL){return NULL;}
+         Bnode<T,U> *ptem=root,*parent=NULL;
+		 while(ptem)
+		 {     parent=ptem;
+		      if(ptem->getKey()==p.first)//T class must be compareable or error
+		      {
+		          return ptem;
+		      }else if(ptem->getKey()<p.first)
+		      {
+		         ptem=ptem->rchild;
+		      }else{
+			  	 ptem=ptem->lchild;
+			  }
+			  
+		 }
+
+		 if(ptem==NULL)
+		 {
+		     return parent;//parent node
+		 }
+		 return ptem;
+		 
+   }
+	
+  bool Delete(std::pair<T,U>&p){
+
+     Bnode <T,U>*target=search(p);
+	 if(target==NULL||target->getKey()!=p.first){
+	 	  return false;
+	 }
+    // std::cout<<target->key_value.first<<std::endl;
 	 
-	 std::cout<<"ok everything"<<std::endl;
+	 if(target->lchild==NULL &&target->rchild==NULL)
+	 {   
+	      std::cout<<"lchild=rchild=NULL"<<"target->getkey()="<<std::endl;
+		  std::cout<<"target getkey()= "<<target->getKey()<<"target parent getkey()="<<std::endl;//<<target->parent->getKey()<<std::endl;
+          if(target->parent==NULL){//root node
+		  	  delete target;  
+		      target=NULL;
+		      size-=1;
+		      return true;
+		  }
+		  
+	      if(target->getKey()<target->parent->getKey())
+	      {
+	         target->parent->lchild=NULL;
+			
+			
+	      }else{
+		  	   target->parent->rchild=NULL;
+		  }
+		  std::cout<<"lchild=rchild=NULl delete"<<std::endl;
+		  size-=1;
+		  delete target;
+		  target=NULL;
+	 }else if(target->lchild==NULL &&target->rchild)
+	 {
+	       if(target->parent->getKey()>target->getKey())
+	       	{
+	       	   target->parent->lchild=target->rchild;
+	       	}else{
+                target->parent->rchild=target->rchild;  
+			}
+			size-=1;
+			delete target;
+			target=NULL;
+			
+	 }else if(target->lchild &&target->rchild==NULL)
+	  {
+	       if(target->parent->getKey()>target->getKey())
+	       	{
+	       	   target->parent->lchild=target->rchild;
+	       	}else{
+                target->parent->rchild=target->rchild;  
+			}
+			size-=1;
+			delete target;
+			target=NULL;
+			
+	 }else{
+
+               Bnode<T,U>*tem=target->rchild;
+			   if(tem){
+			   	   
+			   	   if(tem->lchild==NULL)
+			   	   {
+			   	     std::swap(tem->getKey(),target->key_value.first);
+                     std::swap(tem->getValue(),target->key_value.second);
+					 target->rchild=tem->rchild;
+					 tem->parent=target;
+					 size-=1;
+					 delete tem;
+					 tem=NULL;
+					 return true;
+			   	   }
+				   while(tem){
+				   	    tem=tem->lchild;
+				   }
+	               std::swap(target->key_value.first,tem->getKey());
+				   std::swap(target->key_value.second,tem->getValue());
+                   delete tem;
+				   tem=NULL;
+				   size-=1;
+				   return true;
+				   
+	
+	  }
+	}
 	 
-	 //test smart_ptr
-	 
-	 
-	 TC_SharedPtr<object>ptr(new object);
-	 ptr->key="df";
-	 ptr->value="12";
-	 std::cout<<ptr.unique()<<" "<<ptr.usecount()<<std::endl;
-	 
-	  TC_SharedPtr<object>ptr1=ptr->getSharedptr();
-	  std::cout<<ptr1.unique()<<" "<<ptr1.usecount()<<std::endl;
-	 
-	 string tem=ptr->toString();
-	 std::cout<<tem<<std::endl;
-    
- 
-    //std::cout<<"hello world"<<std::endl;
+	 return false;  
+
+ }
+
+  Bnode<T,U>* succ(std::pair<T,U>&p)
+  {
+          Bnode <T,U>*target=search(p);
+		  if(target==NULL||target->getKey()!=p.first){
+		 	  return NULL;
+		  }
+
+		  Bnode<T,U>*tem=target;
+		  if(tem==root){return NULL;}//root
+		  if(tem->rchild==NULL){//no rchild return parent
+		   	 return tem->parent;
+		  }else{
+		      tem=tem->rchild;
+			  if(tem->lchild==NULL){
+			  	 return tem;
+			  }else{
+			    while(tem)
+			    {
+			      tem=tem->lchild;
+			    }
+				return tem;
+			  }
+			  
+		  }
+		  		
+      
+  }
   
+   void show(){
+         if(getsize())
+            travel(this->root);
+   }
 
-return 0;
+   void travel(Bnode<T,U>*p){
+       if(p){
+           travel(p->lchild);
+		   std::cout<<"key="<<p->getKey()<<"value="<<p->getValue()<<std::endl;
+           travel(p->rchild);
+	   }
+   }
+
+};
+
+
+
+
+
+
+
+
+
+int main() {
+
+
+
+
+   binSTtree<int,std::string>tree;
+   auto tem1=std::make_pair<int,std::string>(12,"fdasfds");
+   tree.insert(tem1);
+   auto tem2=std::make_pair<int,std::string>(14,"fdasfds");
+   tree.insert(tem2);
+   auto tem3=std::make_pair<int,std::string>(34,"fdasfds");
+   tree.insert(tem3);
+   auto tem4=std::make_pair<int,std::string>(1,"fdasfds");
+   tree.insert(tem4);
+   tree.show();
+   tree.Delete(tem4);
+   tree.show();
+   tree.Delete(tem3);
+   tree.show();
+   tree.Delete(tem2);
+   tree.show();
+   tree.Delete(tem1);
+   tree.show();
+
+    return 0;
 }
+
+
+
+//http://alrightchiu.github.io/SecondRound/binary-search-tree-sortpai-xu-deleteshan-chu-zi-liao.html
+
+
 
